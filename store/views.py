@@ -3,6 +3,7 @@ from django.http.response import JsonResponse
 import json
 from datetime import datetime
 from .models import Product, ShippingAddress, Order, OrderItem, Customer
+from django.views.decorators.csrf import csrf_exempt
 
 
 def store(request):
@@ -37,6 +38,7 @@ def cart(request):
     return render(request, 'store/cart.html', {'items': items, 'order': order, 'cartItems': cartItems, 'shipping': False})
 
 
+@csrf_exempt
 def checkout(request):
     if request.user.is_authenticated:
         customer = request.user.customer
