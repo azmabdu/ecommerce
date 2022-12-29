@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'store.apps.StoreConfig',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [
@@ -77,6 +78,8 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
+
+CRISPY_TEMPLATE_PACK = 'uni_form'
 
 USE_TZ = True
 

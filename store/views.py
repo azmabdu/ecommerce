@@ -1,9 +1,29 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http.response import JsonResponse
 import json
 from datetime import datetime
 from .models import Product, ShippingAddress, Order, OrderItem, Customer
 from django.views.decorators.csrf import csrf_exempt
+from .forms import UserForm
+from django.contrib import messages
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+
+
+def getCartItems(request):
+    if request.user.is_authenticated:
+        customer = request.user.customer
+        order, created = Order.objects.get_or_create(
+            customer=customer, complete=False)
+        items = order.orderitem_set.all()
+        cartItems = order.get_cart_items
+    else:
+        items = []
+        order = {'get_cart_total': 0,
+                 'get_cart_items': 0, 'shipping': False}
+        cartItems = order['get_cart_items']
+    return cartItems
 
 
 def store(request):
@@ -22,6 +42,7 @@ def store(request):
     return render(request, 'store/store.html', {'products': products, 'cartItems': cartItems})
 
 
+@login_required(login_url='/login')
 def cart(request):
     if request.user.is_authenticated:
         customer = request.user.customer
@@ -29,12 +50,6 @@ def cart(request):
             customer=customer, complete=False)
         items = order.orderitem_set.all()
         cartItems = order.get_cart_items
-
-    else:
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0}
-        cartItems = order['get_cart_items']
-
     return render(request, 'store/cart.html', {'items': items, 'order': order, 'cartItems': cartItems, 'shipping': False})
 
 
@@ -111,3 +126,55 @@ def processOrder(request):
         print('Not logged in')
 
     return JsonResponse('Payment Submitted...', safe=False)
+
+
+def registerUser(request):
+    cartItems = getCartItems(request)
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('email')
+            user = form.save()
+            # create customer
+            customer = Customer.objects.create(
+                user=user,
+                email=email,
+                name=username,
+            )
+            customer.save()
+            messages.success(request, f'{user} has been created')
+            login(request, user)
+            return redirect('/')
+        else:
+            messages.error(request, 'Error occured')
+    form = UserForm()
+    return render(request, 'store/register.html', {'form': form, 'cartItems': cartItems})
+
+
+def loginUser(request):
+    cartItems = getCartItems(request)
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('/')
+        else:
+            messages.error(request, 'No account with these credentials')
+    form = AuthenticationForm()
+    return render(request, 'store/login.html', {'form': form, 'cartItems': cartItems})
+
+
+def logoutUser(request):
+    logout(request)
+    return redirect('store')
+
+
+def detailView(request, pk):
+    cartItems = getCartItems(request)
+    product = Product.objects.get(pk=pk)
+    return render(request, 'store/detail.html', {'product': product})
