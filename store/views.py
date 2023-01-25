@@ -38,7 +38,7 @@ def store(request):
         order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
         cartItems = order['get_cart_items']
 
-    products = Product.objects.all()
+    products = Product.objects.order_by('?')
     return render(request, 'store/store.html', {'products': products, 'cartItems': cartItems})
 
 
@@ -177,4 +177,4 @@ def logoutUser(request):
 def detailView(request, pk):
     cartItems = getCartItems(request)
     product = Product.objects.get(pk=pk)
-    return render(request, 'store/detail.html', {'product': product})
+    return render(request, 'store/detail.html', {'product': product, 'cartItems': cartItems})
